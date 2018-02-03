@@ -211,13 +211,13 @@ void registerModel(model * m){
 		
 	
 		triInd++;
-		if(z>vectorBuffer[m->indices[triInd]].z) z = vectorBuffer[m->indices[triInd]].z;
+		if(z<vectorBuffer[m->indices[triInd]].z) z = vectorBuffer[m->indices[triInd]].z;
 		
 		currentTri->x2 = vectorBuffer[m->indices[triInd]].x;
 		currentTri->y2 = vectorBuffer[m->indices[triInd]].y;
 		
 		triInd++;
-		if(z>vectorBuffer[m->indices[triInd]].z) z = vectorBuffer[m->indices[triInd]].z;
+		if(z<vectorBuffer[m->indices[triInd]].z) z = vectorBuffer[m->indices[triInd]].z;
 		
 		currentTri->x3 = vectorBuffer[m->indices[triInd]].x;
 		currentTri->y3 = vectorBuffer[m->indices[triInd]].y;
@@ -354,9 +354,9 @@ void drawTriangle(tri * in){
 
 
 void recursiveDrawQuad(s16 x1,  s16 x2, s16 y1, s16 x3, s16 x4, s16 y2){
-	u16 x5 = (x1+x3)/2;
-	u16 x6 = (x2+x4)/2;
-	u16 y3 = (y1+y2)/2;
+	u16 x5 = (x1+x3)>>1;
+	u16 x6 = (x2+x4)>>1;
+	u16 y3 = (y1+y2)>>1;
 	
 	if(y3==y1||y3==y2||y1==y2) return;
 	
@@ -372,9 +372,9 @@ void recursiveDrawQuad(s16 x1,  s16 x2, s16 y1, s16 x3, s16 x4, s16 y2){
 }
 
 void recursiveDrawTriangle(s16 x1, s16 x2, s16 y1, s16 x3, s16 y2){
-	u16 x4 = (x1+x3)/2;
-	u16 x5 = (x2+x3)/2;
-	u16 y3 = (y1+y2)/2;
+	u16 x4 = (x1+x3)>>1;
+	u16 x5 = (x2+x3)>>1;
+	u16 y3 = (y1+y2)>>1;
 	if(y3==y1||y3==y2||y1==y2) return;
 	
 	setLine(drawColor,x4,x5,y3);

@@ -13,7 +13,7 @@ const quaternion identityQuaternion = {
 	INTTOFIX16(1)
 };
 
-fix16 sinFix16(fix16 theta){
+PUTIWRAM fix16 sinFix16(fix16 theta){
 	theta = theta&1023;
 	if(theta<256){
 		return sinTable[theta];
@@ -27,7 +27,7 @@ fix16 sinFix16(fix16 theta){
 	return -sinTable[255-(theta&255)];
 }
 
-fix16 cosFix16(fix16 theta){
+PUTIWRAM fix16 cosFix16(fix16 theta){
 		theta = (theta+256)&1023;
 	if(theta<256){
 		return sinTable[theta];
@@ -41,7 +41,7 @@ fix16 cosFix16(fix16 theta){
 	return -sinTable[255-(theta&255)];
 }
 
-fix16 sqrtFix16(fix16 x){
+PUTIWRAM fix16 sqrtFix16(fix16 x){
 	fix16 sqrt;//this function needs to be cleaned up real bad
 	fix16 guess;//sweet sweet newton's approximation, if the guess is improved then the function goes faster
 	
@@ -105,13 +105,15 @@ quaternion quatFromAngles(fix16 x, fix16 y, fix16 z,fix16 theta){
 	
 	fix16 total = sqrtFix16(MULT(x,x)+MULT(y,y)+MULT(z,z));
 	
+	//total = sqrtFix16(total);
+	
 	x = FIX16DIVIDE(x,total);
 	y = FIX16DIVIDE(y,total);
 	z = FIX16DIVIDE(z,total);
 	
 	
-	q.w = cosFix16(theta>>1);
-	theta = sinFix16(theta>>1);
+	q.w = cosFix16(theta/2);
+	theta = sinFix16(theta/2);
 	
 	
 	
@@ -126,43 +128,43 @@ quaternion quatFromAngles(fix16 x, fix16 y, fix16 z,fix16 theta){
 	return q;
 }
 
-void normalizeQuaternion(quaternion * a){
+PUTIWRAM void normalizeQuaternion(quaternion * a){
 	fix16 total = MULT(a->x,a->x)+MULT(a->y,a->y)+MULT(a->z,a->z)+MULT(a->w,a->w);
-	if(total<63||total>65){
+	//if(total<63||total>65){
 	total = sqrtFix16(total);
 	a->x = FIX16DIVIDE(a->x,total);
 	a->y = FIX16DIVIDE(a->y,total);
 	a->z = FIX16DIVIDE(a->z,total);
 	a->w = FIX16DIVIDE(a->w,total);
-	}
+	//}
 }
 
 
-void setCurrentRotation(quaternion * a){
-	fix16 xy = MULT(a->x,a->y)<<1;
-	fix16 xz = MULT(a->x,a->z)<<1;
-	fix16 wx = MULT(a->w,a->x)<<1;
-	fix16 wy = MULT(a->w,a->y)<<1;
-	fix16 wz = MULT(a->w,a->z)<<1;
-	fix16 yz = MULT(a->y,a->z)<<1;
-	fix16 ww = MULT(a->w,a->w);
+PUTIWRAM void setCurrentRotation(quaternion * a){
+	fix16 xy = MULT(a->x,a->y);
+	fix16 xz = MULT(a->x,a->z);
+	fix16 wx = MULT(a->w,a->x);
+	fix16 wy = MULT(a->w,a->y);
+	fix16 wz = MULT(a->w,a->z);
+	fix16 yz = MULT(a->y,a->z);
+	//fix16 ww = MULT(a->w,a->w);
 	fix16 xx = MULT(a->x,a->x);
 	fix16 yy = MULT(a->y,a->y);
 	fix16 zz = MULT(a->z,a->z);
 	
-	currentMatrix[0] = ww+xx-yy-zz;
-	currentMatrix[1] = xy-wz;
-	currentMatrix[2] = xz+wy;
+	currentMatrix[0] = FIX16(1)-((yy+zz)<<1);
+	currentMatrix[1] = (xy-wz)<<1;
+	currentMatrix[2] = (xz+wy)<<1;
 	//currentMatrix[3] = 0;
 	
-	currentMatrix[4] = xy+wz;
-	currentMatrix[5] = ww-xx+yy-zz;
-	currentMatrix[6] = yz+wx;
+	currentMatrix[4] = (xy+wz)<<1;
+	currentMatrix[5] = FIX16(1)-((xx+zz)<<1);
+	currentMatrix[6] = (yz-wx)<<1;
 	//currentMatrix[7] = 0;
 	
-	currentMatrix[8] = xz-wy;
-	currentMatrix[9] = yz-wx;
-	currentMatrix[10] = ww-xx-yy+zz;
+	currentMatrix[8] = (xz-wy)<<1;
+	currentMatrix[9] = (yz+wx)<<1;
+	currentMatrix[10] = FIX16(1)-((xx+yy)<<1);
 	//currentMatrix[11] = 0;
 	
 	currentMatrix[12] = 0;
@@ -281,7 +283,7 @@ void multiplyMatrices(fix16 * a, fix16 * b, fix16 * c){
 }
 
 
-vector transformVector(vector in){
+PUTIWRAM vector transformVector(vector in){
 	vector out;
 	out.x = MULT(in.x,currentMatrix[0])+MULT(in.y,currentMatrix[1])+MULT(in.z,currentMatrix[2])/*+currentMatrix[3]*/;
 	out.y =  MULT(in.x,currentMatrix[4])+MULT(in.y,currentMatrix[5])+MULT(in.z,currentMatrix[6])/*+currentMatrix[7]*/;
@@ -293,6 +295,28 @@ vector transformVector(vector in){
 		out.z+=currentMatrix[11];
 	}
 	return out;
+}
+
+PUTIWRAM void transformVectors(vector * in, vector * out, u16 count){
+	for(u16 i=0;i!=count;i++){
+		out[i].x = MULT(in[i].x,currentMatrix[0])+MULT(in[i].y,currentMatrix[1])+MULT(in[i].z,currentMatrix[2])/*+currentMatrix[3]*/;
+		out[i].y =  MULT(in[i].x,currentMatrix[4])+MULT(in[i].y,currentMatrix[5])+MULT(in[i].z,currentMatrix[6])/*+currentMatrix[7]*/;
+		out[i].z =  MULT(in[i].x,currentMatrix[8])+MULT(in[i].y,currentMatrix[9])+MULT(in[i].z,currentMatrix[10])/*+currentMatrix[11]*/;
+		out[i].w =  /*MULT(in.x,currentMatrix[12])+MULT(in.y,currentMatrix[13])+MULT(in.z,currentMatrix[14])+*/in[i].w;
+		
+		if(out[i].w){
+		out[i].x+=currentMatrix[3];
+		out[i].y+=currentMatrix[7];
+		out[i].z+=currentMatrix[11];
+		out[i].x = FIX16DIVIDE(out[i].x,out[i].z)+120;
+		out[i].y = FIX16DIVIDE(out[i].y,out[i].z)+80;
+		}
+		
+		
+		
+		
+		
+	}
 }
 
 void perspectiveMatrix(void){

@@ -11,6 +11,8 @@ then shift that right 12 bits (6 for each fix16)
 for division you have to shift the  divident left 6 bits, then divide as normal
 */
 
+#define PUTIWRAM __attribute__((section(".iwram")))
+
 #define FIX16MULTIPLY(x,y)  ((((int)(x))*(y))>>6)
 
 #define MULT(x,y)  FIX16MULTIPLY(x,y)
@@ -57,6 +59,8 @@ void translateMatrix(fix16 x, fix16 y, fix16 z);
 void rotateMatrix(quaternion rot);
 
 vector transformVector(vector in);
+
+void transformVectors(vector * in, vector * out, u16 count);
 
 void eulerRotationMatrix(fix16 x, fix16 y, fix16 z);
 
